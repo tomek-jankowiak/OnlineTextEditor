@@ -8,7 +8,8 @@ OBJ := \
 	server/client_handler.o \
 	server/server.o
 DEPS := \
-	util/client_status.h
+	util/client_status.h \
+	util/coding.h
 
 all: $(EXEC_OUTPUT)
 

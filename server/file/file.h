@@ -13,7 +13,7 @@ class File {
 public:
     File(const std::string& filename) 
         : filename_(filename) { 
-            pthread_mutex_init(this->buffer_update_mutex_, NULL); 
+            pthread_mutex_init(&this->buffer_update_mutex_, NULL); 
             };
 
     File(const File&) = delete;
@@ -34,7 +34,7 @@ private:
     const char* buffer_;
     std::unordered_set<ClientHandler*> users_;
 
-    pthread_mutex_t* buffer_update_mutex_;
+    pthread_mutex_t buffer_update_mutex_;
 
 };
 

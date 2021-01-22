@@ -1,5 +1,6 @@
 #include "./client_handler.h"
 #include "../file/file.h"
+#include "../util/coding.h"
 
 #include <cstdio>
 #include <unistd.h>
@@ -10,9 +11,10 @@ void ClientHandler::Run() {
     //thread write
 
     // If there is no file opened, ask client to create one.
-    if (!this->edited_file) {
-        const char* send_status = std::to_string(client_new_file).c_str();
-        write(this->socket_fd, send_status, 1);
+    /*if (!this->edited_file) {
+        while(write(this->socket_fd, &client_new_file, 1) == 0) {
+            continue
+        }
         std::printf("New client status sent\n");
 
         char buffer[4];
@@ -46,9 +48,25 @@ void ClientHandler::Run() {
     } else {
         const char* send_status = std::to_string(client_open_file).c_str();
         write(this->socket_fd, send_status, 1);
-    }
+    }*/
 
     this->edited_file->attachUser(this);
+    if (this->edited_file->getBuffer()) {
+        while (write(this->socket_fd, &client_open_file, 1) == 0) { continue; }
+
+        int buffer_size = strlen(this->edited_file->getBuffer()) + 4;
+        char* buffer = new char[buffer_size];
+        EncodeFixed32(buffer, buffer_size);
+        buffer += 4;
+        memcpy(buffer, this->edited_file->getBuffer(), buffer_size - 4);
+
+        int write_count = 0;
+        while (write_count != buffer_size) {
+            write_count += write(this->socket_fd, buffer, buffer_size);
+        }
+    } else {
+        while (write(this->socket_fd, &client_new_file, 1) == 0) { continue; }
+    }
 
     while (this->status_ != client_close_connection) {
         char user_status[1];

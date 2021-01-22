@@ -16,7 +16,6 @@
 
 #include "./client_handler.h"
 
-File* opened_file;
 
 void Server::Run() const {
     static int on = 1;
@@ -33,8 +32,11 @@ void Server::Run() const {
     std::printf("Server running at port %d\n", port_);
     socklen_t socklen = sizeof(sockaddr_in);
 
+    std::string filename = "test.txt"
+    File* edited_file = new File(filename);
+
     while(1) {
-        ClientHandler* client_handler = new ClientHandler(opened_file);
+        ClientHandler* client_handler = new ClientHandler(edited_file);
         client_handler->socket_fd = accept(server_socket_fd, (sockaddr*)&client_handler->clientaddr, &socklen);
 
         pthread_t thread_id;

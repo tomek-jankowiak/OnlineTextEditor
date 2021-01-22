@@ -3,7 +3,7 @@
 
 File::~File() {
     delete[] this->buffer_;
-    delete this;
+    pthread_mutex_destroy(&this->buffer_update_mutex_);
 }
 
 void File::attachUser(ClientHandler* client) {
@@ -25,10 +25,10 @@ void File::notify(ClientHandler* calling_client) {
 }
 
 void File::updateBuffer(const char* buffer) {
-    pthread_mutex_lock(this->buffer_update_mutex_);
+    pthread_mutex_lock(&this->buffer_update_mutex_);
     if (this->buffer_) {
         delete[] this->buffer_;
     }
     this->buffer_ = buffer;
-    pthread_mutex_unlock(this->buffer_update_mutex_);
+    pthread_mutex_unlock(&this->buffer_update_mutex_);
 }
