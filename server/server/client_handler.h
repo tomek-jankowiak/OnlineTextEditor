@@ -20,6 +20,7 @@ public:
     void Run();
 
     void updateFile();
+    File* getFile() { return edited_file; };
 
 private:
     File* edited_file;

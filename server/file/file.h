@@ -3,8 +3,8 @@
 
 #include <string.h>
 #include <set>
-#include <unordered_set>
 #include <pthread.h>
+#include <vector>
 
 class ClientHandler;
 
@@ -12,7 +12,8 @@ class File {
 
 public:
     File(const std::string& filename) 
-        : filename_(filename) { 
+        : filename_(filename) {
+            buffer_length_ = 0;
             pthread_mutex_init(&this->buffer_update_mutex_, NULL); 
             };
 
@@ -23,16 +24,18 @@ public:
     
     void attachUser(ClientHandler*);
     void detachUser(ClientHandler*);
-    void updateBuffer(const char*);
+    void updateBuffer(const char*, size_t);
     void notify(ClientHandler*);
 
     std::string getFilename() { return this->filename_; };
-    const char* getBuffer() { return this->buffer_; };
+    std::string getBuffer() { return this->buffer_; };
+    int getBufferLength() { return this->buffer_length_; };
 
 private:
     const std::string filename_;
-    const char* buffer_;
-    std::unordered_set<ClientHandler*> users_;
+    std::string buffer_;
+    size_t buffer_length_;
+    std::set<ClientHandler*> users_;
 
     pthread_mutex_t buffer_update_mutex_;
 
