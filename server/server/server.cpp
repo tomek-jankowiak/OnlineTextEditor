@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "./client_handler.h"
+#include "../file/file.h"
 
 
 void Server::Run() const {
@@ -32,7 +33,7 @@ void Server::Run() const {
     std::printf("Server running at port %d\n", port_);
     socklen_t socklen = sizeof(sockaddr_in);
 
-    std::string filename = "test.txt"
+    const std::string filename = "test.txt";
     File* edited_file = new File(filename);
 
     while(1) {
@@ -51,6 +52,7 @@ void Server::Run() const {
 
 void* Server::HandleClient(void* arg) {
     ClientHandler* client_handler = (ClientHandler*)arg;
+    client_handler->getFile()->attachUser(client_handler);
     client_handler->Run();
     delete client_handler;
 }
