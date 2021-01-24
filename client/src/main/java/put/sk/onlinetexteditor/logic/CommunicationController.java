@@ -21,10 +21,19 @@ public class CommunicationController {
       InputStream in = socket.getInputStream();
 
       int bufferLength = readLength(in);
+      if (bufferLength == 0) {
+        return null;
+      }
       byte[] byteBuffer = new byte[bufferLength];
-      int count = 0;
-      while (count != bufferLength) {
-        count += in.read(byteBuffer, count, bufferLength - count);
+      int writeCount = 0;
+      int count;
+      while (writeCount != bufferLength) {
+        count = in.read(byteBuffer, writeCount, bufferLength - writeCount);
+        if (count == -1) {
+          return null;
+        } else {
+          writeCount += count;
+        }
       }
       return new String(byteBuffer);
     } catch (IOException ex) {
@@ -33,11 +42,11 @@ public class CommunicationController {
     }
   }
 
-  public void sendClientStatus(Socket socket, int status) {
-    byte[] clientStatus = encodeStatus(status);
+  public void sendClientStatus(Socket socket, byte status) {
+    System.out.println(status);
     try {
       OutputStream out = socket.getOutputStream();
-      out.write(clientStatus);
+      out.write(status);
     } catch (IOException ex) {
       ex.printStackTrace();
     }
@@ -53,12 +62,6 @@ public class CommunicationController {
     }
   }
 
-  private byte[] encodeStatus(int status) {
-    ByteBuffer buffer = ByteBuffer.allocate(1);
-    buffer.putInt(status);
-    return buffer.array();
-  }
-
   private byte[] encodeBuffer(String buffer) {
     ByteBuffer byteBuffer = ByteBuffer.allocate(4 + buffer.length());
     byteBuffer.putInt(buffer.length());
@@ -69,8 +72,13 @@ public class CommunicationController {
   private int readLength(InputStream in) throws IOException {
     byte[] length = new byte[4];
     int readCount = 0;
+    int count;
     while (readCount != 4) {
-      readCount += in.read(length,readCount, 4 - readCount);
+      count = in.read(length,readCount, 4 - readCount);
+      if (count == -1) {
+        return 0;
+      }
+      readCount += count;
     }
     ByteBuffer byteBuffer = ByteBuffer.allocate(4);
     byteBuffer.put(length);

@@ -46,7 +46,7 @@ public class Application {
   private void connectedCallback() {
     connectionFrame.setVisible(false);
     editorFrame.setVisible(true);
-    SwingUtilities.invokeLater(() -> {
+    new Thread(() -> {
       int status = communicationController.receiveClientStatus(connectionController.getSocket());
       System.out.println(status);
       if (status == ClientStatus.CLIENT_OPEN_FILE) {
@@ -54,8 +54,8 @@ public class Application {
         String input = communicationController.receiveBuffer(connectionController.getSocket());
         editorFrame.setTextArea(input);
       }
-      //editorFrame.runReadLoop();
-    });
+      editorFrame.runReadLoop();
+    }).start();
   }
 
   private void disconnectedCallback() {

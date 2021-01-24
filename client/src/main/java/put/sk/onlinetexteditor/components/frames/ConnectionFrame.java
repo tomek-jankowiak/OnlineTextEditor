@@ -36,7 +36,6 @@ public class ConnectionFrame extends JFrame {
     });
 
     buttonConnect.addActionListener(e -> onConnect());
-
   }
 
   private void onConnect() {

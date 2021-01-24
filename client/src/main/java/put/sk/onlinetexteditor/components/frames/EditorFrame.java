@@ -51,11 +51,12 @@ public class EditorFrame extends JFrame {
   }
 
   public void runReadLoop() {
-    SwingUtilities.invokeLater(() -> {
       while (connectionController.getClientStatus() != ClientStatus.CLIENT_CLOSE_CONNECTION) {
-        communicationController.receiveBuffer(connectionController.getSocket());
+        String receivedBuffer = communicationController.receiveBuffer(connectionController.getSocket());
+        if (receivedBuffer != null) {
+          textArea.setText(receivedBuffer);
+        }
       }
-    });
   }
 
   private void onKeyReleased() {

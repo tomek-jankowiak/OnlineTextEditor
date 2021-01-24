@@ -18,7 +18,6 @@ public class ConnectionController {
     int portNumber = parsePortNumber(port);
     try {
       socket = new Socket(inetAddress, portNumber);
-      //socket.setSoTimeout(1000);
       this.address = inetAddress;
       this.port = portNumber;
       clientStatus = ClientStatus.CLIENT_NEW_CONNECTION;
