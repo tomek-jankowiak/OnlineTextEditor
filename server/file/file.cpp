@@ -6,8 +6,7 @@ File::~File() {
 }
 
 void File::attachUser(ClientHandler* client) {
-    users_.insert(client);
-    std::printf("Client inserted\n");
+    users_.emplace(client);
     if (this->buffer_length_ > 0) {
         client->updateFile();
     }
@@ -18,7 +17,7 @@ void File::detachUser(ClientHandler* client) {
 }
 
 void File::notify(ClientHandler* calling_client) {
-    for (auto user : this->users_) {
+    for (auto& user : this->users_) {
         if (user == calling_client) {
             continue;
         }

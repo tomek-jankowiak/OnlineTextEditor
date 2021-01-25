@@ -6,13 +6,15 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-void ClientHandler::Run() {    
+void ClientHandler::Run() {
+    this->edited_file->attachUser(this);
+
     if (this->edited_file->getBufferLength() > 0) {
         ClientStatus status = client_open_file;
         while (write(this->socket_fd, &status, 1) == 0) { continue; }
 
-        size_t msg_size = this->edited_file->getBufferLength() + 4;
-        char* buffer = new char[msg_size];
+        size_t msg_size = this->edited_file->getBufferLength();
+        char* buffer = new char[msg_size + 4];
         EncodeFixed32(buffer, msg_size);
         buffer += 4;
 
@@ -21,8 +23,8 @@ void ClientHandler::Run() {
         buffer -= 4;
 
         size_t write_count = 0;
-        while (write_count != msg_size) {
-            write_count += write(this->socket_fd, buffer, msg_size - write_count);
+        while (write_count != msg_size + 4) {
+            write_count += write(this->socket_fd, buffer, msg_size + 4 - write_count);
         }
     } else {
         ClientStatus status = client_new_file;
@@ -32,16 +34,15 @@ void ClientHandler::Run() {
     while (this->status_ != client_close_connection) {
         char user_status[1];
         
-        std::printf("Waiting for status\n");
         while (read(this->socket_fd, user_status, 1) == 0) { continue; }
-        this->status_ = (ClientStatus)std::atoi(user_status); 
+        this->status_ = (ClientStatus)user_status[0];
 
         if (this->status_ == client_update_file) {
             this->ClientRead();
         }
     }
 
-    this->edited_file->detachUser(this);
+    std::printf("Client disconnected (socket_fd: %d).\n", this->socket_fd);
     close(this->socket_fd);
 }
 
@@ -61,7 +62,6 @@ void ClientHandler::ClientRead() {
     while (read_count != msg_size) {
         read_count += read(this->socket_fd, client_buffer, msg_size - read_count);
     }
-
     this->edited_file->updateBuffer(client_buffer, msg_size);
     this->edited_file->notify(this);
 }
@@ -69,8 +69,8 @@ void ClientHandler::ClientRead() {
 void* ClientHandler::ClientWrite(void* arg) {
     ClientHandler* client_handler = (ClientHandler*)arg;
 
-    size_t msg_size = client_handler->edited_file->getBufferLength() + 4;
-    char* buffer = new char[msg_size];
+    size_t msg_size = client_handler->edited_file->getBufferLength();
+    char* buffer = new char[msg_size + 4];
     EncodeFixed32(buffer, msg_size);
     buffer += 4;
 
@@ -79,7 +79,7 @@ void* ClientHandler::ClientWrite(void* arg) {
     buffer -= 4;
 
     size_t write_count = 0;
-    while (write_count != msg_size) {
-        write_count += write(client_handler->socket_fd, buffer, msg_size - write_count);
+    while (write_count != msg_size + 4) {
+        write_count += write(client_handler->socket_fd, buffer, msg_size + 4 - write_count);
     }
 }

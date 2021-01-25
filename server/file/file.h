@@ -38,7 +38,6 @@ private:
     std::set<ClientHandler*> users_;
 
     pthread_mutex_t buffer_update_mutex_;
-
 };
 
 #endif

@@ -44,7 +44,7 @@ void Server::Run() const {
         pthread_create(&thread_id, nullptr, HandleClient, client_handler);
         pthread_detach(thread_id);
 
-        std::printf("New client connected from %s\n", inet_ntoa((in_addr)client_handler->clientaddr.sin_addr));
+        std::printf("New client connected from %s (socket fd: %d)\n", inet_ntoa((in_addr)client_handler->clientaddr.sin_addr), client_handler->socket_fd);
     }
 
     close(server_socket_fd);
@@ -52,7 +52,7 @@ void Server::Run() const {
 
 void* Server::HandleClient(void* arg) {
     ClientHandler* client_handler = (ClientHandler*)arg;
-    client_handler->getFile()->attachUser(client_handler);
     client_handler->Run();
+    client_handler->getFile()->detachUser(client_handler);
     delete client_handler;
 }
