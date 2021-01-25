@@ -5,26 +5,34 @@ import put.sk.onlinetexteditor.components.frames.EditorFrame;
 import put.sk.onlinetexteditor.data.UserFile;
 import put.sk.onlinetexteditor.logic.CommunicationController;
 import put.sk.onlinetexteditor.logic.ConnectionController;
-import put.sk.onlinetexteditor.util.ClientStatus;
+import put.sk.onlinetexteditor.util.MessageCode;
 
 import javax.swing.*;
+import java.util.List;
 
 public class Application {
   private final ConnectionController connectionController;
   private final CommunicationController communicationController;
-  private final UserFile userFile;
   private final ConnectionFrame connectionFrame;
   private final EditorFrame editorFrame;
+  private UserFile userFile;
 
   public Application() {
     this.connectionController = new ConnectionController();
     this.communicationController = new CommunicationController();
-    this.userFile = new UserFile();
 
     this.connectionFrame = new ConnectionFrame(
-            connectionController,this::connectedCallback, this::closeApplication);
-    this.editorFrame = new EditorFrame(
-            connectionController, communicationController, userFile, this::disconnectedCallback);
+            connectionController,
+            this::connectedCallback,
+            this::closeApplication);
+
+    this.editorFrame = new EditorFrame(connectionController,
+            communicationController,
+            this::newFileCallback,
+            this::openFileCallback,
+            this::saveFileCallback,
+            this::chooseFileCallback,
+            this::disconnectedCallback);
   }
 
   public void run() {
@@ -46,22 +54,47 @@ public class Application {
   private void connectedCallback() {
     connectionFrame.setVisible(false);
     editorFrame.setVisible(true);
-    new Thread(() -> {
-      int status = communicationController.receiveClientStatus(connectionController.getSocket());
-      System.out.println(status);
-      if (status == ClientStatus.CLIENT_OPEN_FILE) {
-        System.out.println("OPEN FILE");
-        String input = communicationController.receiveBuffer(connectionController.getSocket());
-        editorFrame.setTextArea(input);
-      }
-      editorFrame.runReadLoop();
-    }).start();
+    List<String> fileList = communicationController.receiveFileList(connectionController.getSocket());
+    if (fileList != null) {
+      editorFrame.setFilesComboBox(fileList);
+    }
+    new Thread(editorFrame::runReadLoop).start();
   }
 
   private void disconnectedCallback() {
-    communicationController.sendClientStatus(connectionController.getSocket(), ClientStatus.CLIENT_CLOSE_CONNECTION);
+    communicationController.sendMessageCode(connectionController.getSocket(),
+            MessageCode.CLIENT_DISCONNECTED);
     connectionController.disconnect();
     editorFrame.setVisible(false);
+    //editorFrame.setTextArea("");
     connectionFrame.setVisible(true);
+  }
+
+  private void newFileCallback(String fileName) {
+    editorFrame.setTextArea("");
+    communicationController.sendBuffer(connectionController.getSocket(),
+            MessageCode.CLIENT_CREATE_NEW_FILE,
+            new String[] { fileName });
+    userFile = new UserFile(fileName, "");
+  }
+
+  private void openFileCallback() {
+    userFile = UserFile.openFile();
+    if (userFile != null) {
+      editorFrame.setTextArea(userFile.getFileBuffer());
+      communicationController.sendBuffer(connectionController.getSocket(),
+              MessageCode.CLIENT_UPLOAD_NEW_FILE,
+              new String[]{userFile.getFileName(), userFile.getFileBuffer()});
+    }
+  }
+
+  private void chooseFileCallback(String fileName) {
+    communicationController.sendBuffer(connectionController.getSocket(),
+            MessageCode.CLIENT_OPEN_FILE,
+            new String[] { fileName });
+  }
+
+  private void saveFileCallback(String buffer) {
+    userFile.saveFile(buffer);
   }
 }
