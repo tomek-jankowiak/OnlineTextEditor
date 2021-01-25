@@ -1,6 +1,6 @@
 package put.sk.onlinetexteditor.logic;
 
-import put.sk.onlinetexteditor.util.ClientStatus;
+import put.sk.onlinetexteditor.util.MessageCode;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -20,7 +20,7 @@ public class ConnectionController {
       socket = new Socket(inetAddress, portNumber);
       this.address = inetAddress;
       this.port = portNumber;
-      clientStatus = ClientStatus.CLIENT_NEW_CONNECTION;
+      clientStatus = MessageCode.CLIENT_CONNECTED;
     } catch (IOException ex) {
       ex.printStackTrace();
     }
@@ -29,7 +29,7 @@ public class ConnectionController {
   public void disconnect() {
     if (socket != null) {
       try {
-        clientStatus = ClientStatus.CLIENT_CLOSE_CONNECTION;
+        clientStatus = MessageCode.CLIENT_DISCONNECTED;
         socket.close();
       } catch (IOException ex) {
         ex.printStackTrace();
