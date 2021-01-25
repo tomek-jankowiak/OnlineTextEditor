@@ -3,8 +3,9 @@
 
 #include <netinet/in.h>
 #include <unordered_set>
+#include <unordered_map>
 
-#include "../util/client_status.h"
+#include "../util/message_code.h"
 
 class File;
 
@@ -14,17 +15,18 @@ public:
     int socket_fd;
     sockaddr_in clientaddr;
     
-    ClientHandler(File* file) 
-        : edited_file(file), status_(client_new_connection){}
+    ClientHandler(std::unordered_map<std::string, File*>& files_map) 
+        : files_map_(files_map), status_(client_connected){}
 
     void Run();
 
     void updateFile();
-    File* getFile() { return edited_file; };
+    File* getFile() { return edited_file_; };
 
 private:
-    File* edited_file;
-    ClientStatus status_;
+    std::unordered_map<std::string, File*>& files_map_;
+    File* edited_file_;
+    MessageCode status_;
 
     pthread_t writeThread_id;
 

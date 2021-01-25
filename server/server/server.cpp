@@ -33,11 +33,11 @@ void Server::Run() const {
     std::printf("Server running at port %d\n", port_);
     socklen_t socklen = sizeof(sockaddr_in);
 
-    const std::string filename = "test.txt";
-    File* edited_file = new File(filename);
+    std::unordered_map<std::string, File*> files_map;
+    //files_map.emplace("test.txt", new File("test.txt"));
 
     while(1) {
-        ClientHandler* client_handler = new ClientHandler(edited_file);
+        ClientHandler* client_handler = new ClientHandler(files_map);
         client_handler->socket_fd = accept(server_socket_fd, (sockaddr*)&client_handler->clientaddr, &socklen);
 
         pthread_t thread_id;
@@ -53,6 +53,5 @@ void Server::Run() const {
 void* Server::HandleClient(void* arg) {
     ClientHandler* client_handler = (ClientHandler*)arg;
     client_handler->Run();
-    client_handler->getFile()->detachUser(client_handler);
     delete client_handler;
 }
