@@ -29,10 +29,11 @@ public:
 
     std::string getFilename() { return this->filename_; };
     std::string getBuffer() { return this->buffer_; };
+    void setBuffer(const std::string& buffer) { this->buffer_ = buffer; };
     int getBufferLength() { return this->buffer_length_; };
 
 private:
-    const std::string filename_;
+    std::string filename_;
     std::string buffer_;
     size_t buffer_length_;
     std::set<ClientHandler*> users_;

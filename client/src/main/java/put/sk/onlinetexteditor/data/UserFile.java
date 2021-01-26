@@ -1,34 +1,38 @@
 package put.sk.onlinetexteditor.data;
 
 import javax.swing.*;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.io.*;
 
 public class UserFile {
-  private String fileName;
-  private String buffer;
-  private File file;
+  private final String fileName;
+  private String fileBuffer;
+
+  public UserFile(String fileName, String fileBuffer) {
+    this.fileName = fileName;
+    this.fileBuffer = fileBuffer;
+  }
 
   public String getFileName() {
     return fileName;
   }
 
-  public String getBuffer() {
-    return buffer;
+  public String getFileBuffer() {
+    return fileBuffer;
   }
 
-  public void newFile() {
+  public static UserFile openFile() {
     JFileChooser fileChooser = new JFileChooser("f:");
-    int r = fileChooser.showOpenDialog(null);
+    FileFilter filter = new FileNameExtensionFilter("TXT File", "txt");
+    fileChooser.setFileFilter(filter);
+    int returnValue = fileChooser.showOpenDialog(null);
 
-    if (r == JFileChooser.APPROVE_OPTION) {
-      file = new File(fileChooser.getSelectedFile().getAbsolutePath());
-      fileName = file.getName();
+    if (returnValue == JFileChooser.APPROVE_OPTION) {
+      File file = new File(fileChooser.getSelectedFile().getAbsolutePath());
       try {
         if (!file.exists()) {
-          file.createNewFile();
+          return null;
         }
         FileReader fileReader = new FileReader(file);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -38,15 +42,52 @@ public class UserFile {
           stringBuilder.append(line);
           stringBuilder.append("\n");
         }
-        buffer = stringBuilder.toString();
+        bufferedReader.close();
+
+        String buffer = stringBuilder.toString();
+        return new UserFile(file.getName(), buffer);
+      } catch (IOException ex) {
+        ex.printStackTrace();
+        return null;
+      }
+    } else {
+      return null;
+    }
+  }
+
+  public void saveFile(String buffer) {
+    fileBuffer = buffer;
+    String[] lines = buffer.split("\n");
+
+    JFileChooser fileChooser = new JFileChooser("f:");
+    FileFilter filter = new FileNameExtensionFilter("text file (.txt)", "txt");
+    fileChooser.setFileFilter(filter);
+    int returnValue = fileChooser.showOpenDialog(null);
+
+    if (returnValue == JFileChooser.APPROVE_OPTION) {
+      File file = new File(fileChooser.getSelectedFile().getAbsolutePath());
+      System.out.println(file.getAbsolutePath());
+      try {
+        if (!file.exists()) {
+          if (!file.createNewFile()) {
+            return;
+          }
+        }
+        FileWriter fileWriter = new FileWriter(file);
+        BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+        for (String line : lines) {
+          bufferedWriter.write(line);
+          bufferedWriter.newLine();
+        }
+
+        bufferedWriter.flush();
+        bufferedWriter.close();
+        JOptionPane.showMessageDialog(null, "File saved.");
+
       } catch (IOException ex) {
         ex.printStackTrace();
       }
     }
   }
 
-  public void setFile(String fileName, String buffer) {
-      this.fileName = fileName;
-      this.buffer = buffer;
-  }
 }

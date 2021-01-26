@@ -1,13 +1,22 @@
 package put.sk.onlinetexteditor.logic;
 
+import put.sk.onlinetexteditor.util.MessageCode;
+
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CommunicationController {
-  public void sendBuffer(Socket socket, String buffer) {
-    byte[] encodedBuffer = encodeBuffer(buffer);
+
+  public void sendBuffer(Socket socket, byte messageCode, String[] buffer) {
+    byte[] encodedBuffer = encodeBuffer(messageCode, buffer);
+    if (encodedBuffer == null) {
+      return;
+    }
+
     try {
       OutputStream out = socket.getOutputStream();
       out.write(encodedBuffer);
@@ -19,7 +28,6 @@ public class CommunicationController {
   public String receiveBuffer(Socket socket) {
     try {
       InputStream in = socket.getInputStream();
-
       int bufferLength = readLength(in);
       if (bufferLength == 0) {
         return null;
@@ -42,8 +50,28 @@ public class CommunicationController {
     }
   }
 
-  public void sendClientStatus(Socket socket, byte status) {
-    System.out.println(status);
+  public List<String> receiveFileList(Socket socket) {
+    List<String> fileList = new ArrayList<>();
+    try {
+      InputStream in = socket.getInputStream();
+      int filesLength = readLength(in);
+      if (filesLength > 0) {
+        for (int i = 0; i < filesLength; i++) {
+          String file = receiveBuffer(socket);
+          if (file != null) {
+            fileList.add(file);
+          }
+        }
+        return fileList;
+      }
+      return null;
+    } catch (IOException ex) {
+      ex.printStackTrace();
+      return null;
+    }
+  }
+
+  public void sendMessageCode(Socket socket, byte status) {
     try {
       OutputStream out = socket.getOutputStream();
       out.write(status);
@@ -52,7 +80,7 @@ public class CommunicationController {
     }
   }
 
-  public int receiveClientStatus(Socket socket) {
+  public int receiveMessageCode(Socket socket) {
     try {
       InputStream inputStream = socket.getInputStream();
       return inputStream.read();
@@ -62,10 +90,29 @@ public class CommunicationController {
     }
   }
 
-  private byte[] encodeBuffer(String buffer) {
-    ByteBuffer byteBuffer = ByteBuffer.allocate(4 + buffer.length());
-    byteBuffer.putInt(buffer.length());
-    byteBuffer.put(buffer.getBytes());
+  private byte[] encodeBuffer(byte messageCode, String[] buffer) {
+    int bufferSize = 0;
+    for (String s : buffer) {
+      bufferSize += s.length();
+    }
+    ByteBuffer byteBuffer;
+    switch (messageCode) {
+      case MessageCode.CLIENT_CREATE_NEW_FILE:
+      case MessageCode.CLIENT_OPEN_FILE:
+      case MessageCode.CLIENT_UPDATE_FILE:
+        byteBuffer = ByteBuffer.allocate(1 + 4 + bufferSize);
+        break;
+      case MessageCode.CLIENT_UPLOAD_NEW_FILE:
+        byteBuffer = ByteBuffer.allocate(1 + 8 + bufferSize);
+        break;
+      default:
+        return null;
+    }
+    byteBuffer.put(messageCode);
+    for (String s : buffer) {
+      byteBuffer.putInt(s.length());
+      byteBuffer.put(s.getBytes());
+    }
     return byteBuffer.array();
   }
 

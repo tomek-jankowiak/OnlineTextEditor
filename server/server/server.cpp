@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "./client_handler.h"
+#include "./client_observer.h"
 #include "../file/file.h"
 
 
@@ -33,26 +34,28 @@ void Server::Run() const {
     std::printf("Server running at port %d\n", port_);
     socklen_t socklen = sizeof(sockaddr_in);
 
-    const std::string filename = "test.txt";
-    File* edited_file = new File(filename);
+    std::unordered_map<std::string, File*> files_map;
+    ClientObserver* client_observer = new ClientObserver();
 
     while(1) {
-        ClientHandler* client_handler = new ClientHandler(edited_file);
+        ClientHandler* client_handler = new ClientHandler(client_observer);
         client_handler->socket_fd = accept(server_socket_fd, (sockaddr*)&client_handler->clientaddr, &socklen);
+        client_observer->attachClient(client_handler);
 
         pthread_t thread_id;
         pthread_create(&thread_id, nullptr, HandleClient, client_handler);
         pthread_detach(thread_id);
 
         std::printf("New client connected from %s (socket fd: %d)\n", inet_ntoa((in_addr)client_handler->clientaddr.sin_addr), client_handler->socket_fd);
+        std::printf("Clients connected: %d\n", client_observer->getClientset().size());
     }
 
+    delete client_observer;
     close(server_socket_fd);
 }
 
 void* Server::HandleClient(void* arg) {
     ClientHandler* client_handler = (ClientHandler*)arg;
     client_handler->Run();
-    client_handler->getFile()->detachUser(client_handler);
     delete client_handler;
 }
