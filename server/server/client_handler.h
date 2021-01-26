@@ -7,6 +7,10 @@
 
 #include "../util/message_code.h"
 
+struct ClientWriteStruct;
+
+class ClientObserver;
+
 class File;
 
 class ClientHandler {
@@ -15,22 +19,26 @@ public:
     int socket_fd;
     sockaddr_in clientaddr;
     
-    ClientHandler(std::unordered_map<std::string, File*>& files_map) 
-        : files_map_(files_map), status_(client_connected){}
+    ClientHandler(ClientObserver* client_observer) 
+        : client_observer_(client_observer), status_(client_connected){}
 
     void Run();
 
-    void updateFile();
+    void updateClient(ClientWriteStruct*);
+    void setFile(File*);
     File* getFile() { return edited_file_; };
+    ClientObserver* getClientObserver() { return client_observer_; }; 
 
 private:
-    std::unordered_map<std::string, File*>& files_map_;
+    ClientObserver* client_observer_;
     File* edited_file_;
     MessageCode status_;
 
     pthread_t writeThread_id;
+    bool is_editing_;
 
     void ClientRead();
+
     static void* ClientWrite(void* arg);
 };
 

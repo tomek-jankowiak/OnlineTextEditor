@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "./client_handler.h"
+#include "./client_observer.h"
 #include "../file/file.h"
 
 
@@ -34,19 +35,22 @@ void Server::Run() const {
     socklen_t socklen = sizeof(sockaddr_in);
 
     std::unordered_map<std::string, File*> files_map;
-    //files_map.emplace("test.txt", new File("test.txt"));
+    ClientObserver* client_observer = new ClientObserver();
 
     while(1) {
-        ClientHandler* client_handler = new ClientHandler(files_map);
+        ClientHandler* client_handler = new ClientHandler(client_observer);
         client_handler->socket_fd = accept(server_socket_fd, (sockaddr*)&client_handler->clientaddr, &socklen);
+        client_observer->attachClient(client_handler);
 
         pthread_t thread_id;
         pthread_create(&thread_id, nullptr, HandleClient, client_handler);
         pthread_detach(thread_id);
 
         std::printf("New client connected from %s (socket fd: %d)\n", inet_ntoa((in_addr)client_handler->clientaddr.sin_addr), client_handler->socket_fd);
+        std::printf("Clients connected: %d\n", client_observer->getClientset().size());
     }
 
+    delete client_observer;
     close(server_socket_fd);
 }
 

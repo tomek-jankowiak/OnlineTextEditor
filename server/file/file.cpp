@@ -1,5 +1,6 @@
 #include "./file.h"
 #include "../server/client_handler.h"
+#include "../util/client_write_struct.h"
 
 File::~File() {
     pthread_mutex_destroy(&this->buffer_update_mutex_);
@@ -8,7 +9,10 @@ File::~File() {
 void File::attachUser(ClientHandler* client) {
     users_.emplace(client);
     if (this->buffer_length_ > 0) {
-        client->updateFile();
+        ClientWriteStruct* write_struct = new ClientWriteStruct();
+        write_struct->message_code = server_update_client_file;
+        write_struct->client_handler = client;
+        client->updateClient(write_struct);
     }
 }
 
@@ -21,7 +25,10 @@ void File::notify(ClientHandler* calling_client) {
         if (user == calling_client) {
             continue;
         }
-        user->updateFile();
+        ClientWriteStruct* write_struct = new ClientWriteStruct();
+        write_struct->message_code = server_update_client_file;
+        write_struct->client_handler = user;
+        user->updateClient(write_struct);
     }
 }
 
