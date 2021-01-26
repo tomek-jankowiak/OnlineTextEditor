@@ -54,10 +54,6 @@ public class Application {
   private void connectedCallback() {
     connectionFrame.setVisible(false);
     editorFrame.setVisible(true);
-    List<String> fileList = communicationController.receiveFileList(connectionController.getSocket());
-    if (fileList != null) {
-      editorFrame.setFilesComboBox(fileList);
-    }
     new Thread(editorFrame::runReadLoop).start();
   }
 
@@ -66,7 +62,7 @@ public class Application {
             MessageCode.CLIENT_DISCONNECTED);
     connectionController.disconnect();
     editorFrame.setVisible(false);
-    //editorFrame.setTextArea("");
+    editorFrame.setTextArea("");
     connectionFrame.setVisible(true);
   }
 
@@ -81,6 +77,7 @@ public class Application {
   private void openFileCallback() {
     userFile = UserFile.openFile();
     if (userFile != null) {
+      editorFrame.setEditedFilename(userFile.getFileName());
       editorFrame.setTextArea(userFile.getFileBuffer());
       communicationController.sendBuffer(connectionController.getSocket(),
               MessageCode.CLIENT_UPLOAD_NEW_FILE,
@@ -89,6 +86,7 @@ public class Application {
   }
 
   private void chooseFileCallback(String fileName) {
+    editorFrame.setEditedFilename(fileName);
     communicationController.sendBuffer(connectionController.getSocket(),
             MessageCode.CLIENT_OPEN_FILE,
             new String[] { fileName });

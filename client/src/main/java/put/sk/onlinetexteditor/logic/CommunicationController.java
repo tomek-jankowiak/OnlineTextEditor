@@ -13,7 +13,6 @@ public class CommunicationController {
 
   public void sendBuffer(Socket socket, byte messageCode, String[] buffer) {
     byte[] encodedBuffer = encodeBuffer(messageCode, buffer);
-    System.out.println(messageCode);
     if (encodedBuffer == null) {
       return;
     }
@@ -29,7 +28,6 @@ public class CommunicationController {
   public String receiveBuffer(Socket socket) {
     try {
       InputStream in = socket.getInputStream();
-
       int bufferLength = readLength(in);
       if (bufferLength == 0) {
         return null;

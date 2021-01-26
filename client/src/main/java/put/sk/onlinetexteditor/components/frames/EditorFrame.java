@@ -26,6 +26,7 @@ public class EditorFrame extends JFrame {
   private JButton saveButton;
   private JButton logOutButton;
   private JButton chooseButton;
+  private String editedFilename;
 
   public EditorFrame(
           ConnectionController connectionController,
@@ -73,17 +74,31 @@ public class EditorFrame extends JFrame {
     textArea.setText(buffer);
   }
 
+  public void setEditedFilename(String filename) {
+    editedFilename = filename;
+  }
+
   public void setFilesComboBox(List<String> fileList) {
+    filesComboBox.removeAllItems();
     for (String file : fileList) {
       filesComboBox.addItem(file);
     }
+    filesComboBox.setSelectedItem(editedFilename);
   }
 
   public void runReadLoop() {
       while (connectionController.getClientStatus() != MessageCode.CLIENT_DISCONNECTED) {
-        String receivedBuffer = communicationController.receiveBuffer(connectionController.getSocket());
-        if (receivedBuffer != null) {
-          textArea.setText(receivedBuffer);
+        int messageCode = communicationController.receiveMessageCode(connectionController.getSocket());
+        if (messageCode == MessageCode.SERVER_UPDATE_CLIENT_FILE) {
+          String receivedBuffer = communicationController.receiveBuffer(connectionController.getSocket());
+          if (receivedBuffer != null) {
+            textArea.setText(receivedBuffer);
+          }
+        } else if (messageCode == MessageCode.SERVER_UPDATE_FILE_LIST) {
+          List<String> fileList = communicationController.receiveFileList(connectionController.getSocket());
+          if (fileList != null) {
+            setFilesComboBox(fileList);
+          }
         }
       }
   }
@@ -97,6 +112,7 @@ public class EditorFrame extends JFrame {
   private void onNewFile() {
     String fileName = JOptionPane.showInputDialog(null, "Enter a file name");
     if ((fileName != null) && (fileName.length() > 0)) {
+      editedFilename = fileName;
       SwingUtilities.invokeLater(() -> {
         onNewFileListener.accept(fileName);
         textArea.setEnabled(true);
