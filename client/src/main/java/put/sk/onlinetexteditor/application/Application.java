@@ -8,7 +8,6 @@ import put.sk.onlinetexteditor.logic.ConnectionController;
 import put.sk.onlinetexteditor.util.MessageCode;
 
 import javax.swing.*;
-import java.util.List;
 
 public class Application {
   private final ConnectionController connectionController;
@@ -86,6 +85,9 @@ public class Application {
   }
 
   private void chooseFileCallback(String fileName) {
+    if (userFile == null) {
+      userFile = new UserFile(fileName, "");
+    }
     editorFrame.setEditedFilename(fileName);
     communicationController.sendBuffer(connectionController.getSocket(),
             MessageCode.CLIENT_OPEN_FILE,

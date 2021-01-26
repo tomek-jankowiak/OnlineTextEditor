@@ -1,6 +1,8 @@
 package put.sk.onlinetexteditor.data;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.*;
 
 public class UserFile {
@@ -22,11 +24,16 @@ public class UserFile {
 
   public static UserFile openFile() {
     JFileChooser fileChooser = new JFileChooser("f:");
+    FileFilter filter = new FileNameExtensionFilter("TXT File", "txt");
+    fileChooser.setFileFilter(filter);
     int returnValue = fileChooser.showOpenDialog(null);
 
     if (returnValue == JFileChooser.APPROVE_OPTION) {
       File file = new File(fileChooser.getSelectedFile().getAbsolutePath());
       try {
+        if (!file.exists()) {
+          return null;
+        }
         FileReader fileReader = new FileReader(file);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
         StringBuilder stringBuilder = new StringBuilder();
@@ -50,20 +57,33 @@ public class UserFile {
 
   public void saveFile(String buffer) {
     fileBuffer = buffer;
-    System.out.println(fileBuffer);
+    String[] lines = buffer.split("\n");
+
     JFileChooser fileChooser = new JFileChooser("f:");
+    FileFilter filter = new FileNameExtensionFilter("text file (.txt)", "txt");
+    fileChooser.setFileFilter(filter);
     int returnValue = fileChooser.showOpenDialog(null);
 
     if (returnValue == JFileChooser.APPROVE_OPTION) {
       File file = new File(fileChooser.getSelectedFile().getAbsolutePath());
+      System.out.println(file.getAbsolutePath());
       try {
+        if (!file.exists()) {
+          if (!file.createNewFile()) {
+            return;
+          }
+        }
         FileWriter fileWriter = new FileWriter(file);
         BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-        bufferedWriter.write(buffer);
+        for (String line : lines) {
+          bufferedWriter.write(line);
+          bufferedWriter.newLine();
+        }
 
         bufferedWriter.flush();
         bufferedWriter.close();
         JOptionPane.showMessageDialog(null, "File saved.");
+
       } catch (IOException ex) {
         ex.printStackTrace();
       }
