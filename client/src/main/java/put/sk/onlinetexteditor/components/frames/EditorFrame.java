@@ -3,6 +3,8 @@ package put.sk.onlinetexteditor.components.frames;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import put.sk.onlinetexteditor.error.ConnectionException;
+import put.sk.onlinetexteditor.error.InvalidFileException;
 import put.sk.onlinetexteditor.logic.CommunicationController;
 import put.sk.onlinetexteditor.logic.ConnectionController;
 import put.sk.onlinetexteditor.util.MessageCode;
@@ -22,6 +24,7 @@ public class EditorFrame extends JFrame {
   private final Runnable onOpenFileListener;
   private final Consumer<String> onSaveFileListener;
   private final Consumer<String> onChooseFileListener;
+  private final Runnable onLostConnectionListener;
   private final Runnable onDisconnectListener;
   private JPanel mainPanel;
   private JTextArea textArea;
@@ -40,6 +43,7 @@ public class EditorFrame extends JFrame {
           Runnable onOpenFileListener,
           Consumer<String> onSaveFileListener,
           Consumer<String> onChooseFileListener,
+          Runnable onLostConnectionListener,
           Runnable onDisconnectListener) {
     super("Online Text Editor");
 
@@ -49,6 +53,7 @@ public class EditorFrame extends JFrame {
     this.onOpenFileListener = onOpenFileListener;
     this.onSaveFileListener = onSaveFileListener;
     this.onChooseFileListener = onChooseFileListener;
+    this.onLostConnectionListener = onLostConnectionListener;
     this.onDisconnectListener = onDisconnectListener;
 
     this.setContentPane(mainPanel);
@@ -93,17 +98,21 @@ public class EditorFrame extends JFrame {
 
   public void runReadLoop() {
     while (connectionController.getClientStatus() != MessageCode.CLIENT_DISCONNECTED) {
-      int messageCode = communicationController.receiveMessageCode(connectionController.getSocket());
-      if (messageCode == MessageCode.SERVER_UPDATE_CLIENT_FILE) {
-        String receivedBuffer = communicationController.receiveBuffer(connectionController.getSocket());
-        if (receivedBuffer != null) {
-          textArea.setText(receivedBuffer);
+      try {
+        int messageCode = communicationController.receiveMessageCode(connectionController.getSocket());
+        if (messageCode == MessageCode.SERVER_UPDATE_CLIENT_FILE) {
+          String receivedBuffer = communicationController.receiveBuffer(connectionController.getSocket());
+          if (receivedBuffer != null) {
+            textArea.setText(receivedBuffer);
+          }
+        } else if (messageCode == MessageCode.SERVER_UPDATE_FILE_LIST) {
+          List<String> fileList = communicationController.receiveFileList(connectionController.getSocket());
+          if (fileList != null) {
+            setFilesComboBox(fileList);
+          }
         }
-      } else if (messageCode == MessageCode.SERVER_UPDATE_FILE_LIST) {
-        List<String> fileList = communicationController.receiveFileList(connectionController.getSocket());
-        if (fileList != null) {
-          setFilesComboBox(fileList);
-        }
+      } catch (ConnectionException ex) {
+        return;
       }
     }
   }
@@ -111,7 +120,7 @@ public class EditorFrame extends JFrame {
   private void onKeyReleased() {
     communicationController.sendBuffer(connectionController.getSocket(),
             MessageCode.CLIENT_UPDATE_FILE,
-            new String[] { textArea.getText() } );
+            new String[]{textArea.getText()});
   }
 
   private void onNewFile() {
@@ -119,33 +128,54 @@ public class EditorFrame extends JFrame {
     if ((fileName != null) && (fileName.length() > 0)) {
       editedFilename = fileName;
       SwingUtilities.invokeLater(() -> {
-        onNewFileListener.accept(fileName);
-        textArea.setEnabled(true);
-        saveButton.setEnabled(true);
+        try {
+          onNewFileListener.accept(fileName);
+          textArea.setEnabled(true);
+          saveButton.setEnabled(true);
+        } catch (ConnectionException ex) {
+          showError("Connection lost.");
+          onLostConnectionListener.run();
+        }
       });
     }
   }
 
   private void onOpenFile() {
     SwingUtilities.invokeLater(() -> {
-      onOpenFileListener.run();
-      textArea.setEnabled(true);
-      saveButton.setEnabled(true);
+      try {
+        onOpenFileListener.run();
+        textArea.setEnabled(true);
+        saveButton.setEnabled(true);
+      } catch (InvalidFileException ex) {
+        showError("Invalid file.");
+      } catch (ConnectionException ex) {
+        showError("Connection lost.");
+        onLostConnectionListener.run();
+      }
     });
   }
 
   private void onSaveFile() {
     SwingUtilities.invokeLater(() -> {
-      onSaveFileListener.accept(textArea.getText());
+      try {
+        onSaveFileListener.accept(textArea.getText());
+      } catch (InvalidFileException ex) {
+        showError("Couldn't save file.");
+      }
     });
   }
 
   private void onChooseFile() {
     if (filesComboBox.getItemCount() > 0) {
       SwingUtilities.invokeLater(() -> {
-        onChooseFileListener.accept(Objects.requireNonNull(filesComboBox.getSelectedItem()).toString());
-        textArea.setEnabled(true);
-        saveButton.setEnabled(true);
+        try {
+          onChooseFileListener.accept(Objects.requireNonNull(filesComboBox.getSelectedItem()).toString());
+          textArea.setEnabled(true);
+          saveButton.setEnabled(true);
+        } catch (ConnectionException ex) {
+          showError("Connection lost.");
+          onLostConnectionListener.run();
+        }
       });
     }
   }
@@ -154,6 +184,10 @@ public class EditorFrame extends JFrame {
     textArea.setEnabled(false);
     saveButton.setEnabled(false);
     onDisconnectListener.run();
+  }
+
+  private void showError(String message) {
+    JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
   }
 
   {

@@ -3,6 +3,8 @@ package put.sk.onlinetexteditor.application;
 import put.sk.onlinetexteditor.components.frames.ConnectionFrame;
 import put.sk.onlinetexteditor.components.frames.EditorFrame;
 import put.sk.onlinetexteditor.data.UserFile;
+import put.sk.onlinetexteditor.error.ConnectionException;
+import put.sk.onlinetexteditor.error.InvalidFileException;
 import put.sk.onlinetexteditor.logic.CommunicationController;
 import put.sk.onlinetexteditor.logic.ConnectionController;
 import put.sk.onlinetexteditor.util.MessageCode;
@@ -31,6 +33,7 @@ public class Application {
             this::openFileCallback,
             this::saveFileCallback,
             this::chooseFileCallback,
+            this::connectionLostCallback,
             this::disconnectedCallback);
   }
 
@@ -65,13 +68,20 @@ public class Application {
     connectionFrame.setVisible(true);
   }
 
+  private void connectionLostCallback() {
+    editorFrame.setVisible(false);
+    editorFrame.setTextArea("");
+    connectionFrame.setVisible(true);
+  }
+
   private void newFileCallback(String fileName) {
     editorFrame.setTextArea("");
     communicationController.sendBuffer(connectionController.getSocket(),
             MessageCode.CLIENT_CREATE_NEW_FILE,
-            new String[] { fileName });
+            new String[]{fileName});
     userFile = new UserFile(fileName, "");
   }
+
 
   private void openFileCallback() {
     userFile = UserFile.openFile();
@@ -91,7 +101,7 @@ public class Application {
     editorFrame.setEditedFilename(fileName);
     communicationController.sendBuffer(connectionController.getSocket(),
             MessageCode.CLIENT_OPEN_FILE,
-            new String[] { fileName });
+            new String[]{fileName});
   }
 
   private void saveFileCallback(String buffer) {

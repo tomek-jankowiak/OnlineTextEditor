@@ -3,6 +3,9 @@ package put.sk.onlinetexteditor.components.frames;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import put.sk.onlinetexteditor.error.ConnectionException;
+import put.sk.onlinetexteditor.error.InvalidAddressException;
+import put.sk.onlinetexteditor.error.InvalidPortException;
 import put.sk.onlinetexteditor.logic.ConnectionController;
 
 import javax.swing.*;
@@ -47,13 +50,25 @@ public class ConnectionFrame extends JFrame {
     String address = textFieldAddress.getText();
     String port = textFieldPort.getText();
     SwingUtilities.invokeLater(() -> {
-      connectionController.connect(address, port);
-      onConnectListener.run();
+      try {
+        connectionController.connect(address, port);
+        onConnectListener.run();
+      } catch (InvalidAddressException ex) {
+        showError("Given address couldn't be resolved.");
+      } catch (InvalidPortException ex) {
+        showError("Invalid port.");
+      } catch (ConnectionException ex) {
+        showError("Connection error.");
+      }
     });
   }
 
   private void onClose() {
     onCloseListener.run();
+  }
+
+  private void showError(String message) {
+    JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
   }
 
 

@@ -1,5 +1,8 @@
 package put.sk.onlinetexteditor.logic;
 
+import put.sk.onlinetexteditor.error.ConnectionException;
+import put.sk.onlinetexteditor.error.InvalidAddressException;
+import put.sk.onlinetexteditor.error.InvalidPortException;
 import put.sk.onlinetexteditor.util.MessageCode;
 
 import java.io.IOException;
@@ -13,7 +16,8 @@ public class ConnectionController {
   private Integer port = null;
   private int clientStatus;
 
-  public void connect(String address, String port) {
+  public void connect(String address, String port) throws
+          ConnectionException, InvalidAddressException, InvalidPortException {
     InetAddress inetAddress = parseInetAddress(address);
     int portNumber = parsePortNumber(port);
     try {
@@ -21,18 +25,18 @@ public class ConnectionController {
       this.address = inetAddress;
       this.port = portNumber;
       clientStatus = MessageCode.CLIENT_CONNECTED;
-    } catch (IOException ex) {
-      ex.printStackTrace();
+    } catch (Exception ex) {
+      throw new ConnectionException();
     }
   }
 
-  public void disconnect() {
+  public void disconnect() throws ConnectionException {
     if (socket != null) {
       try {
         clientStatus = MessageCode.CLIENT_DISCONNECTED;
         socket.close();
       } catch (IOException ex) {
-        ex.printStackTrace();
+        throw new ConnectionException();
       }
     }
   }
@@ -45,19 +49,19 @@ public class ConnectionController {
     return clientStatus;
   }
 
-  private InetAddress parseInetAddress(String address) {
+  private InetAddress parseInetAddress(String address) throws InvalidAddressException {
     try {
       return InetAddress.getAllByName(address)[0];
     } catch (UnknownHostException ex) {
-      return null;
+      throw new InvalidAddressException();
     }
   }
 
-  private int parsePortNumber(String port) {
+  private int parsePortNumber(String port) throws InvalidPortException {
     try {
       return Integer.parseInt(port);
     } catch (NumberFormatException ex) {
-      return -1;
+      throw new InvalidPortException();
     }
   }
 }

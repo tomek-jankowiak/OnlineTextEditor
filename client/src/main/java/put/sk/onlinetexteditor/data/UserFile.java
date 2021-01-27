@@ -1,5 +1,7 @@
 package put.sk.onlinetexteditor.data;
 
+import put.sk.onlinetexteditor.error.InvalidFileException;
+
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -22,7 +24,7 @@ public class UserFile {
     return fileBuffer;
   }
 
-  public static UserFile openFile() {
+  public static UserFile openFile() throws InvalidFileException {
     JFileChooser fileChooser = new JFileChooser("f:");
     FileFilter filter = new FileNameExtensionFilter("TXT File", "txt");
     fileChooser.setFileFilter(filter);
@@ -47,15 +49,14 @@ public class UserFile {
         String buffer = stringBuilder.toString();
         return new UserFile(file.getName(), buffer);
       } catch (IOException ex) {
-        ex.printStackTrace();
-        return null;
+        throw new InvalidFileException();
       }
     } else {
       return null;
     }
   }
 
-  public void saveFile(String buffer) {
+  public void saveFile(String buffer) throws InvalidFileException {
     fileBuffer = buffer;
     String[] lines = buffer.split("\n");
 
@@ -85,7 +86,7 @@ public class UserFile {
         JOptionPane.showMessageDialog(null, "File saved.");
 
       } catch (IOException ex) {
-        ex.printStackTrace();
+        throw new InvalidFileException();
       }
     }
   }
