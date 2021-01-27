@@ -1,5 +1,6 @@
 package put.sk.onlinetexteditor.logic;
 
+import put.sk.onlinetexteditor.error.ConnectionException;
 import put.sk.onlinetexteditor.util.MessageCode;
 
 import java.io.*;
@@ -11,7 +12,7 @@ import java.util.List;
 
 public class CommunicationController {
 
-  public void sendBuffer(Socket socket, byte messageCode, String[] buffer) {
+  public void sendBuffer(Socket socket, byte messageCode, String[] buffer) throws ConnectionException {
     byte[] encodedBuffer = encodeBuffer(messageCode, buffer);
     if (encodedBuffer == null) {
       return;
@@ -21,11 +22,11 @@ public class CommunicationController {
       OutputStream out = socket.getOutputStream();
       out.write(encodedBuffer);
     } catch (IOException ex) {
-      ex.printStackTrace();
+      throw new ConnectionException();
     }
   }
 
-  public String receiveBuffer(Socket socket) {
+  public String receiveBuffer(Socket socket) throws ConnectionException {
     try {
       InputStream in = socket.getInputStream();
       int bufferLength = readLength(in);
@@ -45,8 +46,7 @@ public class CommunicationController {
       }
       return new String(byteBuffer);
     } catch (IOException ex) {
-      ex.printStackTrace();
-      return null;
+      throw new ConnectionException();
     }
   }
 
@@ -80,13 +80,12 @@ public class CommunicationController {
     }
   }
 
-  public int receiveMessageCode(Socket socket) {
+  public int receiveMessageCode(Socket socket) throws ConnectionException {
     try {
       InputStream inputStream = socket.getInputStream();
       return inputStream.read();
     } catch (IOException ex) {
-      ex.printStackTrace();
-      return -1;
+      throw new ConnectionException();
     }
   }
 
