@@ -60,6 +60,7 @@ public class EditorFrame extends JFrame {
     this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
     this.pack();
     this.setLocationRelativeTo(null);
+    textArea.setFont(textArea.getFont().deriveFont(12f));
 
     this.addWindowListener(new WindowAdapter() {
       public void windowClosing(WindowEvent e) {
@@ -118,9 +119,16 @@ public class EditorFrame extends JFrame {
   }
 
   private void onKeyReleased() {
-    communicationController.sendBuffer(connectionController.getSocket(),
-            MessageCode.CLIENT_UPDATE_FILE,
-            new String[]{textArea.getText()});
+    SwingUtilities.invokeLater(() -> {
+      try {
+        communicationController.sendBuffer(connectionController.getSocket(),
+                MessageCode.CLIENT_UPDATE_FILE,
+                new String[]{textArea.getText()});
+      } catch (ConnectionException ex) {
+        showError("Connection lost.");
+        onLostConnectionListener.run();
+      }
+    });
   }
 
   private void onNewFile() {
