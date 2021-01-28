@@ -62,6 +62,9 @@ void ClientHandler::ClientRead() {
             }
 
             std::string filename = std::string(new_file_name, msg_size);
+            if (this->edited_file_) {
+                this->edited_file_->detachUser(this);
+            }
             this->edited_file_ = new File(filename);
             this->edited_file_->attachUser(this);
             this->client_observer_->addFile(this->edited_file_);
@@ -89,6 +92,9 @@ void ClientHandler::ClientRead() {
                     read_count += read(this->socket_fd, buffer, msg_size - read_count);
                 }
                 file_params[i] = std::string(buffer, msg_size);
+            }
+            if (this->edited_file_) {
+                this->edited_file_->detachUser(this);
             }
             this->edited_file_ = new File(file_params[0]);
             this->edited_file_->setBuffer(file_params[1]);
@@ -118,6 +124,9 @@ void ClientHandler::ClientRead() {
             std::string filename = std::string(buffer, msg_size);
             File* chosen_file = this->client_observer_->getFile(filename);
             if (this->edited_file_ != chosen_file) {
+                if (this->edited_file_) {
+                    this->edited_file_->detachUser(this);
+                }
                 this->edited_file_ = chosen_file;            
                 this->edited_file_->attachUser(this);
 
