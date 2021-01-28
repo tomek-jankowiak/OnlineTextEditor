@@ -20,7 +20,7 @@ public:
     sockaddr_in clientaddr;
     
     ClientHandler(ClientObserver* client_observer) 
-        : client_observer_(client_observer), status_(client_connected){}
+        : client_observer_(client_observer), status_(client_connected){ edited_file_ = nullptr; }
 
     void Run();
 
